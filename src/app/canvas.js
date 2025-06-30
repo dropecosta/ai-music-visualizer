@@ -21,7 +21,7 @@ export default function Canvas({ note }) {
     // Initialize p5 only once
     useEffect(() => {
         const mapNote = (note) => {
-            const spacing = canvasWidth / 13;
+            const spacing = canvasWidth / 12; // 12 notes in chromatic scale
             const notePositions = {
                 'C': 0 * spacing,
                 'C#': 1 * spacing,
@@ -53,7 +53,11 @@ export default function Canvas({ note }) {
                 if (currentNote) {
                     const xPos = mapNote(currentNote);
                     p.fill(currentColor);
-                    p.ellipse(xPos + canvasWidth / 2, 100, 100, 100);
+                    // Position ball from left to right across full canvas width
+                    // Add radius offset to keep ball fully visible
+                    const ballRadius = 50;
+                    const ballX = xPos + ballRadius;
+                    p.ellipse(ballX, canvasHeight / 2, ballRadius * 2, ballRadius * 2);
                 }
             };
         };
@@ -79,6 +83,22 @@ export default function Canvas({ note }) {
             }
         };
     }, []); // Empty dependency array - only run once
+
+    useEffect(() => {
+        if (note) {
+            if (note === "C" || note === "E" || note === "G" || note === "B") {
+                setColor([204, 66, 239]); // Purple for C major chord notes
+            } else if (note === "C#" || note === "G#") {
+                setColor([0, 255, 255]); // Cyan for sharp notes
+            } else if (note === "D" || note === "F" || note === "A") {
+                setColor([0, 0, 204]); // Blue for D minor chord notes
+            } else if (note === "D#" || note === "F#" || note === "A#") {
+                setColor([255, 153, 255]); // Light pink for remaining sharp notes
+            } else {
+                setColor([0, 255, 0]); // Default green
+            }
+        }
+    }, [note]);
 
     return (
         <div ref={canvasRef}></div>

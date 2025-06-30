@@ -1,36 +1,25 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import p5 from 'p5';
 
-export default function Canvas(note) {
-    let canvasRef = useRef(null);
+export default function Canvas({ note }) {
+    const canvasRef = useRef(null);
+    const p5InstanceRef = useRef(null);
+    const noteRef = useRef(note);
+    const colorRef = useRef([0, 255, 0]);
 
     const [color, setColor] = useState([0, 255, 0]);
     const canvasWidth = 800;
     const canvasHeight = 400;
 
+    // Update refs when props change
     useEffect(() => {
-        const sketch = (p) => {
-            p.setup = () => {
-                p.createCanvas(canvasWidth, canvasHeight);
-                p.clear();
-            };
+        noteRef.current = note;
+        colorRef.current = color;
+    }, [note, color]);
 
-            p.draw = () => {
-                p.clear();
-                //if (note) {
-                    let xPos = mapNote(note.note);
-                //}
-                p.fill(color);
-                p.ellipse(xPos + canvasHeight / 2, 100, 100);
-            };
-
-            return () => {
-                canvas.remove();
-            };
-        };
-
+    // Initialize p5 only once
+    useEffect(() => {
         const mapNote = (note) => {
             const spacing = canvasWidth / 13;
             const notePositions = {
@@ -47,15 +36,51 @@ export default function Canvas(note) {
                 'A#': 10 * spacing,
                 'B': 11 * spacing
             };
-
             return notePositions[note] || 0;
-        }
+        };
 
-        const canvas = new p5(sketch, canvasRef.current);
-    }, [note, color]);
+        const sketch = (p) => {
+            p.setup = () => {
+                p.createCanvas(canvasWidth, canvasHeight);
+                p.clear();
+            };
+
+            p.draw = () => {
+                p.clear();
+                const currentNote = noteRef.current;
+                const currentColor = colorRef.current;
+                
+                if (currentNote) {
+                    const xPos = mapNote(currentNote);
+                    p.fill(currentColor);
+                    p.ellipse(xPos + canvasWidth / 2, 100, 100, 100);
+                }
+            };
+        };
+
+        const loadP5AndCreateCanvas = async () => {
+            try {
+                const P5 = (await import('p5')).default;
+                if (canvasRef.current && !p5InstanceRef.current) {
+                    p5InstanceRef.current = new P5(sketch, canvasRef.current);
+                }
+            } catch (error) {
+                console.error('Error loading p5:', error);
+            }
+        };
+
+        loadP5AndCreateCanvas();
+
+        // Cleanup function
+        return () => {
+            if (p5InstanceRef.current) {
+                p5InstanceRef.current.remove();
+                p5InstanceRef.current = null;
+            }
+        };
+    }, []); // Empty dependency array - only run once
 
     return (
         <div ref={canvasRef}></div>
-    )
-
+    );
 }
